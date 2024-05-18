@@ -9,7 +9,7 @@ import math
 import matplotlib.pyplot as plt
 
 # Load and prepare the dataset
-file_path = 'TSLA.csv'  # Make sure to have your dataset ready
+file_path = 'DATA/' + 'AMC.csv'  # Make sure to have your dataset ready
 df = pd.read_csv(file_path)
 data = df[['Close']].values
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -25,7 +25,7 @@ def create_dataset(dataset, time_step=1):
 
 # Parameters
 time_step = 100
-training_size = int(len(data_scaled) * 0.67)
+training_size = int(len(data_scaled) * 0.80)
 test_size = len(data_scaled) - training_size
 train_data, test_data = data_scaled[0:training_size,:], data_scaled[training_size:len(data_scaled),:]
 
@@ -64,7 +64,7 @@ model.compile(optimizer="adam", loss="mean_squared_error")
 model.summary()
 
 # Train the model
-model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=64, verbose=1)
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=100, batch_size=64, verbose=1)
 
 # Make predictions
 train_predict = model.predict(X_train)
