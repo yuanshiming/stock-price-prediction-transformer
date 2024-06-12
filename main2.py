@@ -9,7 +9,7 @@ import math
 import matplotlib.pyplot as plt
 
 # Load and prepare the dataset
-file_path = 'DATA/' + 'TSLA.csv'  # Make sure to have your dataset ready
+file_path = 'DATA/' + 'QCOM.csv'  # Make sure to have your dataset ready
 df = pd.read_csv(file_path)
 data = df[['Close']].values
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -81,23 +81,52 @@ test_rmse = math.sqrt(mean_squared_error(y_test, scaler.inverse_transform(test_p
 print(f"Train RMSE: {train_rmse}")
 print(f"Test RMSE: {test_rmse}")
 
-# Plotting the results
+# Extend the test prediction
+extend_steps = int(0.05 * len(data_scaled))
+last_test_input = X_test[-1]
+
+extended_predictions = []
+for _ in range(extend_steps):
+    pred = model.predict(last_test_input.reshape(1, time_step, 1))
+    extended_predictions.append(pred[0, 0])
+    last_test_input = np.append(last_test_input[1:], pred).reshape(time_step, 1)
+
+# Inverse transform the extended predictions
+extended_predictions = scaler.inverse_transform(np.array(extended_predictions).reshape(-1, 1))
+
+# Concatenate the extended predictions to the test predictions
+extended_test_predict = np.concatenate((test_predict, extended_predictions))
+
+# Print shapes for debugging
+print(f"Shape of data_scaled: {data_scaled.shape}")
+print(f"Shape of train_predict: {train_predict.shape}")
+print(f"Shape of test_predict: {test_predict.shape}")
+print(f"Shape of extended_test_predict: {extended_test_predict.shape}")
+
 # Adjust the time_step offset for plotting
 trainPredictPlot = np.empty_like(data_scaled)
 trainPredictPlot[:, :] = np.nan
 trainPredictPlot[time_step:len(train_predict)+time_step, :] = train_predict
 
 # Shift test predictions for plotting
-testPredictPlot = np.empty_like(data_scaled)
+testPredictPlot = np.empty((len(data_scaled) + extend_steps, 1))
 testPredictPlot[:, :] = np.nan
-testPredictPlot[len(train_predict)+(time_step*2)+1:len(data_scaled)-1, :] = test_predict
+
+# Calculate the correct indices for testPredictPlot
+start_index = len(train_predict) + (time_step * 2) + 1
+end_index = start_index + len(extended_test_predict)
+testPredictPlot[start_index:end_index, :] = extended_test_predict
+
+# Print the start and end indices for debugging
+print(f"Start index for testPredictPlot: {start_index}")
+print(f"End index for testPredictPlot: {end_index}")
 
 # Plot baseline and predictions
 plt.figure(figsize=(12, 6))
 plt.plot(scaler.inverse_transform(data_scaled), label='Actual Stock Price')
 plt.plot(trainPredictPlot, label='Train Predict')
 plt.plot(testPredictPlot, label='Test Predict')
-plt.title('Stock Price Prediction using Transformer')
+plt.title('Stock Price Prediction using Transformer with Extended Forecast')
 plt.xlabel('Time')
 plt.ylabel('Stock Price')
 plt.legend()
